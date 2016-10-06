@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>Air Routes of the World</title>
+
+	<!-- for a good explanation of the enter/udate/exit cycle
+		check out these short examples
+		General Update Pattern, I:  https://bl.ocks.org/mbostock/3808218
+		General Update Pattern, II: https://bl.ocks.org/mbostock/3808221
+		General Update Pattern, III: https://bl.ocks.org/mbostock/3808234
+
+
+	<!-- using version 4 of d3 -->
+		<!--<script src="https://d3js.org/d3.v4.min.js"></script> -->
+ 		<script src="https://d3js.org/d3.v4.js"></script>
+
+	<style type="text/css">
+
+		rect {
+      		fill: cornflowerblue;
+    	}
+
+		rect:hover {
+			fill: purple;
+		}
+
+
+		/* Scott Murray tooltip style, tweaked */
+		#tooltip {
+			position: absolute;
+			width: 80px;
+			height: auto;
+			padding: 5px;
+			background-color: white;
+			-webkit-border-radius: 5px;
+			-moz-border-radius: 5px;
+			border-radius: 5px;
+			-webkit-box-shadow:  2px 2px 4px rgba(0, 0, 0, 0.4);
+			-moz-box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+			box-shadow:  2px 2px 4px rgba(0, 0, 0, 0.4);
+			pointer-events: none;
+		}
+
+		#tooltip.hidden {
+			 display: none;
+		}
+
+		#tooltip p {
+			margin: 0;
+			font-family: sans-serif;
+			font-size: 14px;
+			line-height: 20px;
+		}
+
+	</style>
+</head>
+<body>
+	<h1> Routes per Airport in the World </h1>
+	<!-- div for the tooltip -->
+	<div id="tooltip" class="hidden">
+		<p><strong>Percent of Those Things</strong></p>
+		<p><span id="value">100</span>%</p>
+	</div>
+
+	<script type="text/javascript">
+
+	var dataset;
+	d3.csv("routes.dat.csv", function(data) {
+
+		data.sort(function(a,b) {return a.stops - b.stops ;});
+
+		dataset = d3.nest().key(function(d) {return d.ID;})
+		.sortKeys(d3.ascending)
+		.entries(data);
+		console.log(dataset);
+		renderGraph();
+	});
+
+	function renderGraph() {
+		var margin = {top: 20, right: 10, bottom: 20, left: 80};
+ 	 var width = 800 - margin.left - margin.right,
+ 		height = 500 - margin.top - margin.bottom;
+
+ 	var xScale = d3.scaleBand()
+ 	   .domain( d3.range( dataset.length ) )
+ 	   .range( [ 0, width ] )
+ 	   .padding( 0.1 );
+
+ 	var yScale = d3.scaleLinear()
+ 	   .domain( [ 0, 3000 ] )
+ 	   .range( [ height, 0 ] );
+
+     var xAxis = d3.axisBottom (xScale);
+     var yAxis = d3.axisLeft(yScale);
+
+ 	/* for a nice explanation of mike bostock's margin convention
+ 	 go to https://gist.github.com/mbostock/3019563  */
+
+ 	/* here we're creating the svg, size based on margins we just set
+ 	 and creating a g group positioned with in the defined area */
+ 	var svg = d3.select("body").append("svg")
+ 	  .attr("width", width + margin.left + margin.right)
+ 	  .attr("height", height + margin.top + margin.bottom)
+ 	    .append("g")
+ 			.attr("transform",  "translate(" + margin.left + "," + margin.top + ")");
+
+ 		svg.append("g")
+ 	   .attr("transform", "translate(0," + (-1) + ")")
+ 	   .call( yAxis );
+
+ 	svg.append("g")
+ 	   .attr("transform", "translate(0," + (height-1) + ")")
+ 	   .call( xAxis );
+
+ 	//this creates the DATA JOIN - our dataset is joined to the svg rect elements
+ 	svg.selectAll("rect")
+ 	   .data( dataset )
+ 	   .enter()			//the ENTER state, new elements are created
+ 	   .append("rect")
+        .attr("x", function ( d, i ) {
+             return xScale(i);
+        })
+        .attr("width", xScale.bandwidth() )
+        .attr("y", function( d) {
+					d.values.length;
+            return yScale(d.values.length);
+        })
+        .attr("height", function(d) {
+            return height - yScale(d.values.length);
+        })
+
+ 	   .on("click", function() {
+ 	   		sortBars();
+ 	   });
+
+
+
+
+    	//Define sort order flag
+ 	var sortOrder = false;
+
+ 	//Define sort function
+ 	var sortBars = function() {
+
+ 		//Flip value of sortOrder
+ 	   	sortOrder = !sortOrder;
+
+ 		svg.selectAll("rect")
+ 		   .sort(function(a, b) {
+ 		   		if (sortOrder) {
+ 			   		return d3.ascending(a, b);
+ 		   		} else {
+ 			   		return d3.descending(a, b);
+ 		   		}
+ 		   	})
+ 		   .transition()
+ 		   .delay(function(d, i) {
+ 			   return i * 50;
+ 		   })
+ 		   .duration(1000)
+ 		   .attr("x", function(d, i) {
+ 		   		return xScale(i);
+ 		   });
+
+ 	};
+
+};
+	</script>
+</body>
+</html>
