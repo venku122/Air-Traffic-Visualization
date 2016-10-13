@@ -65,60 +65,105 @@
 
 	<script type="text/javascript">
 
-	var dataset;
+	var dataset, svg, xScale, yScale, xAxis, yAxis, height, width, margin;
+	var planeData, portData, stopsData;
+	var airportButton, planeButton, airlineButton;
 	d3.csv("routes.dat.csv", function(data) {
 
-		data.sort(function(a,b) {return a.stops - b.stops ;});
+		planeData = data;
+		portData = data;
+		airlineData = data;
+	//	data.sort(function(a,b) {return a.stops - b.stops ;});
 
+	//	portData.sort(function(a,b) { return a.stops - b.stops;});
+		portData = d3.nest().key(function(d) {return d["Source Airport"];})
+		.sortKeys(d3.ascending)
+		.entries(portData);
+
+		portData.sort(function(a,b) {return b.values.length - a.values.length;});
+
+
+		planeData = d3.nest().key(function(d) {return d["Equipment"];})
+			.sortKeys(d3.ascending)
+			.entries(planeData);
+
+		planeData.sort(function(a,b) {return b.values.length - a.values.length; })
+
+		airlineData = d3.nest().key(function(d) {return d["Airline"];})
+			.sortKeys(d3.ascending)
+			.entries(airlineData);
+
+			airlineData.sort(function(a,b) {return b.values.length - a.values.length; })
+
+
+		/*
 		dataset = d3.nest().key(function(d) {return d.ID;})
 		.sortKeys(d3.ascending)
-		.entries(data);
-		console.log(dataset);
-		renderGraph();
+		.entries(data);*/
+		//console.log(dataset);
+		//dataset = portData;
+		dataset = airlineData;
+		renderGraph(dataset);
 	});
 
-	function renderGraph() {
-		var margin = {top: 20, right: 10, bottom: 20, left: 80};
- 	 var width = 800 - margin.left - margin.right,
+	function init() {
+		airportButton = document.querySelector('#airports');
+		airlineButton = document.querySelector('#airlines');
+		planeButton   = document.querySelector('#planes');
+
+		airportButton.addEventListener('click', function() { updateGraph(portData); });
+		airlineButton.addEventListener('click', function() { updateGraph(airlineData); });
+		planeButton.addEventListener('click', function() { updateGraph(planeData); });
+	};
+
+	function updateGraph(currentData) {
+
+		d3.select("svg").remove();
+		renderGraph(currentData);
+	};
+
+	function renderGraph(currentData) {
+		dataset = currentData;
+		 margin = {top: 20, right: 10, bottom: 20, left: 80};
+ 	  width = 800 - margin.left - margin.right,
  		height = 500 - margin.top - margin.bottom;
 
- 	var xScale = d3.scaleBand()
- 	   .domain( d3.range( dataset.length ) )
+ 	 xScale = d3.scaleBand()
+ 	   .domain( d3.range( dataset.length / 2 ) )
  	   .range( [ 0, width ] )
- 	   .padding( 0.1 );
+ 	   .padding( 0 );
 
- 	var yScale = d3.scaleLinear()
- 	   .domain( [ 0, 3000 ] )
+ 	 yScale = d3.scalePow()
+ 	   .domain( [ 0, dataset[0].values.length ] )
+		 .exponent(1/2)
  	   .range( [ height, 0 ] );
 
-     var xAxis = d3.axisBottom (xScale);
-     var yAxis = d3.axisLeft(yScale);
-
- 	/* for a nice explanation of mike bostock's margin convention
- 	 go to https://gist.github.com/mbostock/3019563  */
+      xAxis = d3.axisBottom (xScale);
+      yAxis = d3.axisLeft(yScale);
 
  	/* here we're creating the svg, size based on margins we just set
  	 and creating a g group positioned with in the defined area */
- 	var svg = d3.select("body").append("svg")
+ 	svg = d3.select("body").append("svg")
  	  .attr("width", width + margin.left + margin.right)
  	  .attr("height", height + margin.top + margin.bottom)
  	    .append("g")
  			.attr("transform",  "translate(" + margin.left + "," + margin.top + ")");
 
+
  		svg.append("g")
  	   .attr("transform", "translate(0," + (-1) + ")")
  	   .call( yAxis );
 
- 	svg.append("g")
+ 		svg.append("g")
  	   .attr("transform", "translate(0," + (height-1) + ")")
  	   .call( xAxis );
 
  	//this creates the DATA JOIN - our dataset is joined to the svg rect elements
- 	svg.selectAll("rect")
+ 		svg.selectAll("rect")
  	   .data( dataset )
  	   .enter()			//the ENTER state, new elements are created
  	   .append("rect")
-        .attr("x", function ( d, i ) {
+       	.attr("x", function ( d, i ) {
              return xScale(i);
         })
         .attr("width", xScale.bandwidth() )
@@ -131,8 +176,30 @@
         })
 
  	   .on("click", function() {
- 	   		sortBars();
+ 	   		//sortBars();
  	   });
+
+		 svg.append("text")
+    .attr("class", "y label")
+    .attr("text-anchor", "end")
+    .attr("y", 6)
+    .attr("dy", ".75em")
+    .attr("transform", "rotate(90)")
+		 .attr("transform", "translate(" + -50 + "," + 0 + ")")
+    .text("life expectancy (years)");
+	 }
+
+/*
+		 svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(xAxis)
+  .selectAll("text")
+    .attr("y", 9)
+    .attr("x", 9)
+    .attr("dy", "3.5em")
+    .attr("transform", "rotate(90)")
+    .style("text-anchor", "start");*/
 
 
 
@@ -141,7 +208,7 @@
  	var sortOrder = false;
 
  	//Define sort function
- 	var sortBars = function() {
+ /*	var sortBars = function() {
 
  		//Flip value of sortOrder
  	   	sortOrder = !sortOrder;
@@ -163,9 +230,12 @@
  		   		return xScale(i);
  		   });
 
- 	};
-
-};
+ 	};*/
+window.onload = init;
 	</script>
+
+	<button id="airports">Airports</button>
+	<button id="planes">Planes</button>
+	<button id="airlines">Airlines</button>
 </body>
 </html>
