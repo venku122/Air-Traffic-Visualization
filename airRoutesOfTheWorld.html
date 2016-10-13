@@ -4,13 +4,6 @@
 	<meta charset="utf-8">
 	<title>Air Routes of the World</title>
 
-	<!-- for a good explanation of the enter/udate/exit cycle
-		check out these short examples
-		General Update Pattern, I:  https://bl.ocks.org/mbostock/3808218
-		General Update Pattern, II: https://bl.ocks.org/mbostock/3808221
-		General Update Pattern, III: https://bl.ocks.org/mbostock/3808234
-
-
 	<!-- using version 4 of d3 -->
 		<!--<script src="https://d3js.org/d3.v4.min.js"></script> -->
  		<script src="https://d3js.org/d3.v4.js"></script>
@@ -24,45 +17,21 @@
 		rect:hover {
 			fill: purple;
 		}
+		button {
 
-
-		/* Scott Murray tooltip style, tweaked */
-		#tooltip {
+		}
+		#controls {
 			position: absolute;
-			width: 80px;
-			height: auto;
-			padding: 5px;
-			background-color: white;
-			-webkit-border-radius: 5px;
-			-moz-border-radius: 5px;
-			border-radius: 5px;
-			-webkit-box-shadow:  2px 2px 4px rgba(0, 0, 0, 0.4);
-			-moz-box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
-			box-shadow:  2px 2px 4px rgba(0, 0, 0, 0.4);
-			pointer-events: none;
+			left: 325px;
+			top: 615px;
 		}
 
-		#tooltip.hidden {
-			 display: none;
-		}
-
-		#tooltip p {
-			margin: 0;
-			font-family: sans-serif;
-			font-size: 14px;
-			line-height: 20px;
-		}
+		.axis text {display: none;}
 
 	</style>
 </head>
 <body>
-	<h1> Routes per Airport in the World </h1>
-	<!-- div for the tooltip -->
-	<div id="tooltip" class="hidden">
-		<p><strong>Percent of Those Things</strong></p>
-		<p><span id="value">100</span>%</p>
-	</div>
-
+	<h1>Distribution of Air Traffic Around the World</h1>
 	<script type="text/javascript">
 
 	var dataset, svg, xScale, yScale, xAxis, yAxis, height, width, margin;
@@ -103,7 +72,7 @@
 		//console.log(dataset);
 		//dataset = portData;
 		dataset = airlineData;
-		renderGraph(dataset);
+		renderGraph(dataset, "Airlines ");
 	});
 
 	function init() {
@@ -111,30 +80,30 @@
 		airlineButton = document.querySelector('#airlines');
 		planeButton   = document.querySelector('#planes');
 
-		airportButton.addEventListener('click', function() { updateGraph(portData); });
-		airlineButton.addEventListener('click', function() { updateGraph(airlineData); });
-		planeButton.addEventListener('click', function() { updateGraph(planeData); });
+		airportButton.addEventListener('click', function() { updateGraph(portData, "Airports "); });
+		airlineButton.addEventListener('click', function() { updateGraph(airlineData, "Airlines "); });
+		planeButton.addEventListener('click', function() { updateGraph(planeData, "Planes "); });
 	};
 
-	function updateGraph(currentData) {
+	function updateGraph(currentData, typeString) {
 
 		d3.select("svg").remove();
-		renderGraph(currentData);
+		renderGraph(currentData, typeString);
 	};
 
-	function renderGraph(currentData) {
+	function renderGraph(currentData, dataType) {
 		dataset = currentData;
-		 margin = {top: 20, right: 10, bottom: 20, left: 80};
- 	  width = 800 - margin.left - margin.right,
- 		height = 500 - margin.top - margin.bottom;
+		 margin = {top: 20, right: 10, bottom: 100, left: 200};
+ 	  width = 1200 - margin.left - margin.right,
+ 		height = 600 - margin.top - margin.bottom;
 
  	 xScale = d3.scaleBand()
- 	   .domain( d3.range( dataset.length / 2 ) )
- 	   .range( [ 0, width ] )
+ 	   .domain( d3.range( 0, dataset.length ) )
+ 	   .range( [0 , width ] )
  	   .padding( 0 );
 
  	 yScale = d3.scalePow()
- 	   .domain( [ 0, dataset[0].values.length ] )
+ 	   .domain( [ 5, dataset[0].values.length ] )
 		 .exponent(1/2)
  	   .range( [ height, 0 ] );
 
@@ -156,6 +125,7 @@
 
  		svg.append("g")
  	   .attr("transform", "translate(0," + (height-1) + ")")
+		 .attr("class", "axis")
  	   .call( xAxis );
 
  	//this creates the DATA JOIN - our dataset is joined to the svg rect elements
@@ -166,76 +136,45 @@
        	.attr("x", function ( d, i ) {
              return xScale(i);
         })
-        .attr("width", xScale.bandwidth() )
-        .attr("y", function( d) {
+       .attr("width", xScale.bandwidth() )
+       .attr("y", function( d) {
 					d.values.length;
             return yScale(d.values.length);
         })
         .attr("height", function(d) {
             return height - yScale(d.values.length);
         })
+				.append("svg:title")
+				.text(function(d) {return dataType + d.key + " Flights: " + d.values.length;});
 
- 	   .on("click", function() {
- 	   		//sortBars();
- 	   });
 
 		 svg.append("text")
     .attr("class", "y label")
     .attr("text-anchor", "end")
     .attr("y", 6)
     .attr("dy", ".75em")
-    .attr("transform", "rotate(90)")
-		 .attr("transform", "translate(" + -50 + "," + 0 + ")")
-    .text("life expectancy (years)");
+  	.attr("transform", "rotate(90)")
+		 .attr("transform", "translate(" + -50 + "," + 250 + ")")
+    .text("Number of Flights");
+
+		svg.append("text")
+	 .attr("class", "y label")
+	 .attr("text-anchor", "end")
+	 .attr("x", 6)
+	 .attr("dx", ".75em")
+	 .attr("transform", "rotate(90)")
+		.attr("transform", "translate(" + 50 + "," + 525 + ")")
+	 .text(dataType);
 	 }
 
-/*
-		 svg.append("g")
-    .attr("class", "x axis")
-    .attr("transform", "translate(0," + height + ")")
-    .call(xAxis)
-  .selectAll("text")
-    .attr("y", 9)
-    .attr("x", 9)
-    .attr("dy", "3.5em")
-    .attr("transform", "rotate(90)")
-    .style("text-anchor", "start");*/
 
-
-
-
-    	//Define sort order flag
- 	var sortOrder = false;
-
- 	//Define sort function
- /*	var sortBars = function() {
-
- 		//Flip value of sortOrder
- 	   	sortOrder = !sortOrder;
-
- 		svg.selectAll("rect")
- 		   .sort(function(a, b) {
- 		   		if (sortOrder) {
- 			   		return d3.ascending(a, b);
- 		   		} else {
- 			   		return d3.descending(a, b);
- 		   		}
- 		   	})
- 		   .transition()
- 		   .delay(function(d, i) {
- 			   return i * 50;
- 		   })
- 		   .duration(1000)
- 		   .attr("x", function(d, i) {
- 		   		return xScale(i);
- 		   });
-
- 	};*/
 window.onload = init;
 	</script>
 
+<div id="controls">
 	<button id="airports">Airports</button>
 	<button id="planes">Planes</button>
 	<button id="airlines">Airlines</button>
+</div>
 </body>
 </html>
